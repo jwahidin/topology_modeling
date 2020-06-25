@@ -1,0 +1,168 @@
+#---------------------------------------------------------------------
+# Licensed Materials - Property of IBM 
+# 5725-Q09
+#
+# (C) Copyright IBM Corporation 2017, 2018 All Rights Reserved.
+# US Government Users Restricted Rights - Use, duplication
+# or disclosure restricted by GSA ADP Schedule Contract
+# with IBM Corp.
+#---------------------------------------------------------------------
+
+if( match( @Manager, "ProbeWatch" ) )
+{
+    switch(@Summary)
+    {
+    case "Running ...":
+            @Severity = 1
+            @AlertGroup = "probestat"
+            @Type = 2
+    case "Going Down ...":
+            @Severity = 5
+            @AlertGroup = "probestat"
+            @Type = 1
+    case "Start resynchronization" | "Finish resynchronization":
+            @Severity = 2
+            @AlertGroup = "probestat"
+            @Type = 13
+    case "Connection to source lost":
+            @Severity = 5
+            @AlertGroup = "probestat"
+            @Type = 1    
+    default:
+            @Severity = 1
+    }
+    @AlertKey = @Agent
+    @Summary = @Agent + " probe on " + @Node + ": " + @Summary
+}
+else
+{
+    ################################################
+    # Input from ASM
+    #    
+    # guaranteed json fields: uniqueId, observerName, providerName, status, state
+    # optional json fields: name, description, severity, _id, eventType, expiryTimeSeconds
+    # guaranteed http headers: X-TenantID
+    #    
+    ################################################
+
+    ################################################
+    # Types of event (populates @AlertGroup)   
+    #    
+    # ASM Status - status about observed resources (Type Problem / Resolution)  
+    # ASM Self Monitoring - status about ASM itself (Type Problem / Resolution)
+    # ASM Resource Deletion - identifies deleted ASM resources (Type Information)
+    # ASM Resource Creation - identifies newly created ASM resources (Type Information)
+    #
+    ################################################
+
+    ##########################################################################################
+    # @AlertGroup           # Purpose                                 # @Type                #  
+    ##########################################################################################
+    # ASM Status            # Status about observed resources         # Problem / Resolution #
+    # ASM Self Monitoring   # Status about ASM itself                 # Problem / Resolution #
+    # ASM Resource Creation # Identifies newly created ASM resources  # Information          #
+    # ASM Resource Deletion # Identifies deleted ASM resources        # Information          #
+    ##########################################################################################
+
+    # These 4 fields are used to match up the event to the ASM status, and must not be changed
+    @EventId        = $status
+    @Manager        = $observerName
+    @Agent          = $providerName
+    @NodeAlias      = $uniqueId
+
+    # This is a user-friendly string identifying the resource
+    @Node           = $uniqueId
+    if ( exists($name) ) 
+    {
+        @Node=$name
+    }
+    
+    if ( exists($_id) ) 
+    {
+        @LocalNodeAlias=$_id
+    }
+    
+    @AlertGroup = "ASM Status"
+    if ( exists($eventType) )
+    {
+        @AlertGroup=$eventType
+    }
+
+    @ExpireTime = 0
+    if ( exists($expiryTimeSeconds) )
+    {
+        @ExpireTime=$expiryTimeSeconds
+    }
+
+    switch(@AlertGroup)
+    {
+    case "ASM Status" | "ASM Self Monitoring":
+        switch($state)
+        {
+        case "open":
+            @Type = 1
+        case "clear":
+            @Type = 2
+        case "closed":
+            @Type = 2
+        default:
+            @Type = 1
+        }
+    case "ASM Resource Creation":
+        @Type = 13
+    case "ASM Resource Deletion":
+        @Type = 13
+    default:
+        @Type = 13
+    }
+
+    @Severity=1
+    if ( exists($severity) ) 
+    {
+        switch($severity)
+        {
+        case "clear":
+            @Severity = 1
+        case "indeterminate":
+            @Severity = 1
+        case "warning":
+            @Severity = 2
+        case "minor":
+            @Severity = 3
+        case "major":
+            @Severity = 4
+        case "critical":
+            @Severity = 5
+        default:
+            @Severity = 1
+        }
+    }
+
+    @Summary=$status
+    if ( exists($description) ) 
+    {
+        @Summary=$description
+    }
+
+    # Use the status timestamp so that the event isn't older than the topology status
+    if ( exists($observedTime) )
+    {
+            # The Object Server uses seconds, whereas ASM uses milliseconds
+            $seconds = regreplace($observedTime, "(.*?)\d\d\d$", "\1")
+            @LastOccurrence = $seconds
+    }
+
+    
+    # Strip out the headers of interest. These are enclosed in square
+    # brackets (basically string reprsentations of arrays)
+    @Customer = extract( $(MESSAGE.META.X-TenantID), "^\[(.*)\]$" )
+
+    @AlertKey=$uniqueId + "->" + $status + "->" + @Agent + "->" + @Customer
+    @Identifier=@AlertKey + @Type
+    
+    @Class = 45111
+
+    # Temporary add the following log  to monitor the behaviour 
+    Log(WARNING,@AlertKey)
+}
+    

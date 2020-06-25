@@ -1,0 +1,63 @@
+#######################################################################
+#
+#       Copyright (C) 2005, Micromuse, Inc.
+#       All Rights Reserved
+#
+#       RESTRICTED RIGHTS:
+#
+#       This file may have been supplied under a license.
+#       It may be used, disclosed, and/or copied only as permitted
+#       under such license agreement.  Any copy must contain the
+#       above copyright notice and this restricted rights notice.
+#       Use, copying, and/or disclosure of the file is strictly
+#       prohibited unless otherwise provided in the license agreement.
+#
+#
+#######################################################################
+#
+# Format:
+#
+#	Node Type Probability
+#
+# where Node        => Node name for alarm
+#       Type        =>  0 - Link Up/Down
+#			1 - Machine Up/Down
+#			2 - Disk space
+#			3 - Port Error
+#       Probability => Percentage (0 - 100%)
+#
+#######################################################################
+SgMuLink 0 30
+SgLoLink 0 30
+SgKrLink 0 30
+SgTALink 0 30
+SgSyLink 0 30
+SySgLink 0 30
+SyAuLink 0 30
+SyDaLink 0 30
+SyRaLink 0 30
+SiPiLink 0 30
+MunchenAppSrv 1 30
+LondonAppSrv  1 30
+KrakowAppSrv  1 30
+Tel-AvivAppSrv 1 30
+SingaporeAppSrv 1 30
+SydneyAppSrv 1 30
+AustinAppSrv 1 30
+DallasAppSrv 1 30   
+RaleighAppSrv 1 30 
+PiscatawayAppSrv 1 30
+MunchenDb 1 30
+LondonDb  1 30
+KrakowDb  1 30
+Tel-AvivDb 1 30
+SingaporeDb 1 30
+SydneyDb 1 30
+AustinDb 1 30
+DallasDb 1 30   
+RaleighDb 1 30 
+PiscatawayDb 1 30
+Tokyo 2 5
+Beijing 2 5
+Rome 3 5
+Berlin 3 5

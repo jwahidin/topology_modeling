@@ -1,9 +1,5 @@
-# topology_modeling
-Listing of resources to complement the blog post on Topology Modeling
-
-- [ ] For [Medium.com: Building a topology using Agile Service Manager’s REST Interface](./mediumASMPart2)
-
-- [ ] For [Cloudpak8s.io: Building topology using Alerts](./cloudpak8sAlert)
+# Code for Medium article 
+Listing of resources to complement the medium blog post on Topology Modeling
 
 # Part II 
 ## database tables creation
@@ -14,5 +10,6 @@ Listing of resources to complement the blog post on Topology Modeling
 - [createTopoBulkParam.ipl](./createTopoBulkParam.ipl) Impact Policy to read tables and push it into ASM.
 
 Note you need to define the data types for the policy to work.
+You also need to establish the TLS session between Netcool/Impact and ASM.
 
 

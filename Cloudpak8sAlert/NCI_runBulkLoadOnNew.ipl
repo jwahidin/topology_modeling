@@ -1,0 +1,23 @@
+// runBulkLoadOnNew
+// To be called periodically by policy activator.
+// lastUpdate is for removal - if required, not currently implemented.
+//
+
+dtRes = "asm_Res";
+dtEdge = "asm_Edge";
+globalApp = "Event1";
+
+// The insertTime was done less than 60 seconds ago.
+
+filter = "((getdate()-insertTime) < 60)";
+
+recentRes = GetByFilter(dtRes,filter,false);
+numRes = length(recentRes);
+recentEdge = GetByFilter(dtEdge,filter,false);
+numEdge = length(recentEdge);
+Log("Number of Changed Resource: " + numRes +", Number of Changed Edge: " + numEdge);
+
+If ((numRes>0)or(numEdge>0)){
+   Log("Executing Bulk Load at: "  + GetDate());
+   asmRest.bulkLoad(dtRes,dtEdge,globalApp);
+}

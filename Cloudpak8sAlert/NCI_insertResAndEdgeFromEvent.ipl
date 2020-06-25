@@ -1,0 +1,77 @@
+// insertResAndEdgeFromEvent
+// To be called from the OMNIbus Event Reader and hence is expecting an 
+// EventContainer to be populated already.
+// Expected to be call when ProcessReq = 101 or 102 and Class is Simnet 3300
+
+function createOrUpdateResource(Resource,ResType){
+  key = globalApp + Resource;
+  Res = GetByKey(dtRes, key, 1);
+   
+  if (length(Res) > 0){
+    // Maintaining the update time so state rows can be removed.
+    sql="Update custom.a_res set lastUpdate = getdate() where Key = '" + key + "'";
+    Log("SQL: " + sql );
+    DirectSQL('defaultobjectserver', sql, false);
+  } else {
+    nRes = NewObject();
+    nRes.Key = key;
+    nRes.App = globalApp;
+    nRes.UniqueId = Resource;
+    nRes.entityTypes = ResType;
+    nRes.insertTime = GetDate();
+    nRes.lastUpdate = GetDate();
+    nRes.ttl = globalTTL;
+    AddDataItem(dtRes,nRes);
+    Log("New Resource Entry: " + key);
+  }
+} // function
+
+function createOrUpdateEdge(From,Rel,To){
+  key = globalApp + From + Rel + To;
+  Edge = GetByKey(dtEdge, key, 1);
+ 
+  if (length(Edge) > 0){
+    // Maintaining the update time so state rows can be removed.
+    sql="Update custom.a_edge set lastUpdate = getdate() where Key = '" + key +"'";
+    Log("SQL: " + sql );
+    DirectSQL('defaultobjectserver', sql, false);
+  } else {
+    nEdge = NewObject();
+    nEdge.Key = key;
+    nEdge.App = globalApp;
+    nEdge.FromRes = From;
+    nEdge.Relationship = Rel;
+    nEdge.ToRes = To;
+    nEdge.insertTime = GetDate();
+    nEdge.lastUpdate = GetDate();
+    nEdge.ttl = globalTTL;
+    AddDataItem(dtEdge,nEdge);
+    Log("New Edge Entry: " + key);
+  }
+} // function
+
+Log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv Policy started vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+
+// Called by OmnibusEventReader.
+dtRes = "asm_Res";
+dtEdge = "asm_Edge";
+globalTTL = 3600;
+globalApp = "Event1";
+
+eNode1 = EventContainer.Node;
+eNode2 = EventContainer.NodeAlias;
+
+if (EventContainer.ProcessReq = 101) {
+  createOrUpdateResource(eNode1,"router");
+  createOrUpdateResource(eNode2,"router"); 
+  createOrUpdateEdge(eNode1,"routesVia",eNode2);
+} elseif (EventContainer.ProcessReq = 102) {
+  createOrUpdateResource(eNode1,"server");
+  createOrUpdateResource(eNode2,"router"); 
+  createOrUpdateEdge(eNode1,"connectedTo",eNode2);
+} else {
+  // Unknown, do nothing.
+}
+
+Log("^^^^^^^^^^^^^^^^^^^^^ Policy Completed ^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+

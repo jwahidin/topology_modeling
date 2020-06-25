@@ -1,0 +1,145 @@
+########################################################################
+#
+#       Licensed Materials - Property of IBM
+#       
+#       
+#       
+#       (C) Copyright IBM Corp. 2005. All Rights Reserved
+#       
+#       US Government Users Restricted Rights - Use, duplication
+#       or disclosure restricted by GSA ADP Schedule Contract
+#       with IBM Corp.
+#
+#
+#######################################################################
+
+if( match( @Manager, "ProbeWatch" ) )
+{
+        switch(@Summary)
+        {
+        case "Running ...":
+                @Severity = 1
+                @AlertGroup = "probestat"
+                @Type = 2
+        case "Going Down ...":
+                @Severity = 5
+                @AlertGroup = "probestat"
+                @Type = 1
+include "$OMNIHOME/extensions/probewatch/probefailover.include"
+        default:
+                @Severity = 1
+        }
+        @AlertKey = @Agent
+        @Summary = @Agent + " probe on " + @Node + ": " + @Summary
+}
+else
+{
+	@Manager	= "Simnet Probe"
+	@Class		= 3300
+	@Node 		= $Node
+	@Agent 		= $Agent
+	@AlertGroup 	= $Group
+	@Summary 	= $Summary
+	@Severity 	= $Severity
+	@Identifier 	= $Node + $Agent + $Severity + $Group
+
+	if (nmatch($Summary, "Port failure"))
+	{
+		@AlertKey = $PortNumber
+	}
+	else if (nmatch($Summary, "Diskspace"))
+	{
+		@AlertKey = $PercentFull + "% full"
+	}
+
+	if(regmatch($Summary, ".*Down.*")){
+		@Identifier = "Down" + @Identifier 
+		@Type = 1
+	}
+	if(regmatch($Summary, ".*Up.*")){
+		@Type = 2
+	}
+#
+# Added by Julius F. Wahidin  for ASM Topology simulation
+#
+	if(regmatch($Summary, ".*offline.*")){
+		@Identifier = "offline" + @Identifier 
+		@Type = 1
+	}
+	if(regmatch($Summary, ".*online.*")){
+		@Type = 2
+	}
+
+#
+# For Link Failed.  ProcessReq = 101
+# @Location = City that failed the remote ping
+# @Node = Routername, at the city that failed the ping, will be used by the model and status.
+# @NodeAlias = Routername of the originate, will be used by the model.
+# @RemoteNodeAlias = City that originate the remote ping
+# @AlertKey = Original Node from Simne
+	
+	if(regmatch($Summary, "Link.*")){
+                @ProcessReq=101
+                @AlertKey = $Node
+                switch(@Node)
+                {
+                  case "SgMuLink":
+                    @RemoteNodeAlias = "Singapore"
+                    @Location  = "Munchen"
+                  case "SgLoLink":
+                    @RemoteNodeAlias = "Singapore"
+                    @Location  = "London"
+                  case "SgKrLink":
+                    @RemoteNodeAlias = "Singapore"
+                    @Location  = "Krakow"
+                  case "SgTALink":
+                    @RemoteNodeAlias = "Singapore"
+                    @Location  = "Tel-Aviv"
+                  case "SgSyLink":
+                    @RemoteNodeAlias = "Singapore"
+                    @Location  = "Sydney"
+                  case "SySgLink":
+                    @RemoteNodeAlias = "Sydney"
+                    @Location  = "Singapore"
+                  case "SyAuLink":
+                    @RemoteNodeAlias = "Sydney"
+                    @Location  = "Austin"
+                  case "SyDaLink":
+                    @RemoteNodeAlias = "Sydney"
+                    @Location  = "Dallas"
+                  case "SyRaLink":
+                    @RemoteNodeAlias = "Sydney"
+                    @Location  = "Raleigh"
+                  case "SiPiLink":
+                    @RemoteNodeAlias = "Sydney"
+                    @Location  = "Piscataway"    
+                  default:
+                    @Severity = 1
+                }
+		@NodeAlias= "R-" + @RemoteNodeAlias
+                @Node = "R-" + @Location
+	        @Summary = "Remote ping from " + @NodeAlias + " to " + @Node + " failed."
+#	        @Summary = "Remote ping from to " + @Node + " failed."
+	}
+
+
+# For machine online/offline, ProcessReq = 102
+# @Location = City that host the machine
+# @Node = Machinename, at the city that failed,  will be used by the model and status.
+# @NodeAlias = Routername, will be used by the model.
+
+	if(regmatch($Summary, "Machine.*")){
+           @ProcessReq=102
+	   if(regmatch($Node, ".*Db")){
+	     @Location = extract($Node,"(.*)Db")
+           } else if(regmatch($Node, ".*AppSrv")){
+	     @Location = extract($Node,"(.*)AppSrv")
+           } else {
+	     @Location = $Node
+           }
+           @Node = "A-" + $Node
+           @NodeAlias = "R-" + @Location
+	   @Summary = "Application " + @Node + " heartbeat. " + $Summary + ",  connected to " + @NodeAlias
+	}
+}
+

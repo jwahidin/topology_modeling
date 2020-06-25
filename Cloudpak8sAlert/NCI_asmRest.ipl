@@ -1,0 +1,75 @@
+// asmRest
+// Expected to be called by another policy with the dataTypes and App being passed as parameters.
+
+function bulkLoad(dtRes,dtEdge,sApp) {
+
+  hasError="no";
+  Handle java.lang.Exception { 
+    Log("Exception: " + ErrorMessage);
+    hasError="yes";
+  } 
+  
+  Log("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv Policy started vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+  app_name = sApp;
+  Log(2,"Parameter received: " + app_name);
+  paramExist = false;
+  if (app_name != NULL) {
+      if (length(app_name) > 0) {
+          paramExist = true;
+      }
+  }
+  if (!paramExist) {
+      Log("Parameter not specified.  Policy will exit!");
+      Exit();
+  }
+  
+  // Initialize the values of all the parameters.  Parameters are assigned inside the function.
+  asmFunctions.asm_initalize(asm_protocol,asm_host,asm_port,asm_path,HeadersToSend,HttpProperties);
+  // Start the Bulk Job it has not been started.
+  asmFunctions.asm_startBulkJob(asm_protocol,asm_host,asm_port,asm_path,HeadersToSend,HttpProperties,asm_JobId,retError);
+  
+  if ((retError == 'yes') or (hasError == 'yes')){
+     Log("Connecting to ASM has failed");
+     Exit();
+  }
+  
+  // By this point the connection is considered established.
+  app_filter = "App='"+ app_name + "'";
+  RssTbl = GetByFilter(dtRes,app_filter,false);
+  numRss = length(RssTbl);
+  log(2,"Number of Resource found = " + numRss); 
+  
+  r = 0;
+  while (r < numRss){
+        asm_name=RssTbl[r].UniqueId;
+        asm_uniqueId=RssTbl[r].UniqueId;
+        asm_matchTokens=RssTbl[r].UniqueId;
+        asm_mergeTokens=RssTbl[r].UniqueId;
+        asm_entityTypes=RssTbl[r].EntityTypes;
+        asmFunctions.asm_createResource(asm_protocol,asm_host,asm_port,asm_path,HeadersToSend,HttpProperties,asm_name,asm_uniqueId,asm_matchTokens,asm_mergeTokens,asm_entityTypes,asm_JobId);
+        
+        Log(2,"Creating "+ asm_entityTypes + ", id: " + asm_uniqueId);
+        r = r + 1;
+  } // End while
+  
+  // Get the Relationship table
+  EdgeTbl = GetByFilter(dtEdge,app_filter,false);
+  numEdge = length(EdgeTbl);
+  log(2,"Number of Edge found = " + numEdge); 
+  
+  e = 0;
+  while (e < numEdge){
+      asm_fromUniqueId=EdgeTbl[e].FromRes;
+      asm_edgeType=EdgeTbl[e].Relationship;
+      asm_toUniqueId=EdgeTbl[e].ToRes;
+        
+      asmFunctions.asm_createEdge(asm_protocol,asm_host,asm_port,asm_path,HeadersToSend,HttpProperties,asm_fromUniqueId,asm_edgeType,asm_toUniqueId,asm_JobId);
+      Log(2,"Connecting "+ asm_fromUniqueId +" : " + asm_edgeType + " : " + asm_toUniqueId );
+      e = e + 1;
+  }// End while
+  
+  // Synchronize the Bulk Job
+  asmFunctions.asm_syncBulkJob(asm_protocol,asm_host,asm_port,asm_path,HeadersToSend,HttpProperties,asm_JobId);
+  
+  Log("^^^^^^^^^^^^^^^^^^^^^ Policy Completed ^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+}
