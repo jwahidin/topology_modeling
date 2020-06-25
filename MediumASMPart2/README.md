@@ -1,7 +1,7 @@
 # Code for Medium article 
 Listing of resources to complement the medium blog post on Topology Modeling
 
-# Part II 
+
 ## database tables creation
 - [create_custom.sql](./create_custom.sql) scripts to create and populate the database tables
 
